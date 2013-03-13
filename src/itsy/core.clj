@@ -84,12 +84,15 @@
     (trace :retrieving-body-for url-map)
     (let [url (:url url-map)
           score (:count url-map)
-          body (:body (http/get url (:http-opts config)))
+          start (System/currentTimeMillis)
+          resp  (http/get url (:http-opts config))
+          end (System/currentTimeMillis)
           _ (trace :extracting-urls)
-          urls ((:url-extractor config) url body)]
+          urls ((:url-extractor config) url (:body resp))]
       (enqueue-urls config urls)
       (try
-        ((:handler config) (assoc url-map :body body))
+        ((:handler config)
+         (merge resp url-map {:runtime (- end start)} ))
         (catch Exception e
           (error e "Exception executing handler"))))
     (catch java.net.SocketTimeoutException e
